@@ -1,6 +1,3 @@
-import math
-
-
 class Rotation(float):
     @staticmethod
     def distance_to(a, b):
