@@ -30,12 +30,12 @@ robots = [
     Position(screen.get_size()[0] / 2, screen.get_size()[1] / 2),
     max_accelerations=Position(100 * scale, 100 * scale, 150 * scale),
     # max_accelerations=Position(100 * random.random() * scale, 100 * random.random() * scale, 60 + 50 * random.random()),
-    max_velocity=250 * scale) for i in range(256)
+    max_velocity=250 * scale) for i in range(50**2)
 ]
 
 running = True
 
-FPS = 120
+FPS = 240
 
 time_scale = 5
 
@@ -43,6 +43,9 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+    time_passed = (time.time_ns() / 1e9 - last_time) * time_scale
+    last_time = time.time_ns() / 1e9
 
     mouse_x, mouse_y = pygame.mouse.get_pos()
     screen.fill((255, 255, 255))
@@ -70,7 +73,7 @@ while running:
             x_offset *= 80
             y_offset *= 80
 
-        robot.go_to_position(Position(mouse_x + x_offset, mouse_y + y_offset), time_difference=1/FPS * time_scale)
+        robot.go_to_position(Position(mouse_x + x_offset, mouse_y + y_offset), time_difference=time_passed)
         robot.display(pygame, screen)
 
         pygame.draw.circle(
@@ -86,6 +89,9 @@ while running:
         color = [255, 0, 0]
     text = font.render(f'{robots_at_target} on target', True, color)
     screen.blit(text, (10, 60))
+
+    text = font.render(f'{1/time_passed * time_scale} FPS', True, color)
+    screen.blit(text, (10, 90))
 
     # # lock position
     # robot.position[0] = 500
