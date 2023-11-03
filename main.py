@@ -1,5 +1,6 @@
 import math
 import os
+import random
 import time
 
 import pygame
@@ -22,26 +23,21 @@ pygame.display.set_caption(f"Robot Test")
 
 font = pygame.font.Font('freesansbold.ttf', 32)
 
-scale = 0.6
+scale = 1
 
-robot = Robot(
+robots = [
+    Robot(
     Position(screen.get_size()[0] / 2, screen.get_size()[1] / 2),
-    max_accelerations=Position(100 * scale, 100 * scale, 1000),
-    max_velocity=250 * scale
-)
-
-scale = 0.4
-robot2 = Robot(
-    Position(screen.get_size()[0] / 2, screen.get_size()[1] / 2),
-    max_accelerations=Position(100 * scale, 100 * scale, 100),
-    max_velocity=250 * scale
-)
+    max_accelerations=Position(100 * scale, 100 * scale, 150 * scale),
+    # max_accelerations=Position(100 * random.random() * scale, 100 * random.random() * scale, 60 + 50 * random.random()),
+    max_velocity=250 * scale) for i in range(256)
+]
 
 running = True
 
 FPS = 120
 
-time_scale = 10
+time_scale = 5
 
 while running:
     for event in pygame.event.get():
@@ -49,10 +45,6 @@ while running:
             running = False
 
     mouse_x, mouse_y = pygame.mouse.get_pos()
-
-    robot.go_to_position(Position(mouse_x, mouse_y), time_difference=1/FPS * time_scale)
-    robot2.go_to_position(Position(mouse_x, mouse_y), time_difference=1/FPS * time_scale)
-
     screen.fill((255, 255, 255))
 
     pygame.draw.circle(
@@ -61,11 +53,39 @@ while running:
         2
     )
 
-    On_Target_text = font.render(f'{time_scale}X', True, [0, 0, 255])
-    screen.blit(On_Target_text, (10, 10))
+    text = font.render(f'{time_scale}X', True, [0, 0, 255])
+    screen.blit(text, (10, 10))
 
-    robot.display(pygame, screen, body_color=0x00FF00, target_color=0x000FF)
-    robot2.display(pygame, screen, body_color=0xFFFF00, target_color=0x0FFFF)
+    robots_at_target = 0
+
+    for index, robot in enumerate(robots):
+        length = math.ceil(math.sqrt(len(robots)))
+        x_offset = (index % length - length / 2) * 15 + 7.5
+        y_offset = (index // length - length / 2) * 15 + 7.5
+
+        if pygame.mouse.get_pressed()[0]:
+            x_offset += random.randrange(-1000, 1000)
+            y_offset += random.randrange(-1000, 1000)
+        elif pygame.mouse.get_pressed()[2]:
+            x_offset *= 80
+            y_offset *= 80
+
+        robot.go_to_position(Position(mouse_x + x_offset, mouse_y + y_offset), time_difference=1/FPS * time_scale)
+        robot.display(pygame, screen)
+
+        pygame.draw.circle(
+            screen, 0XFF0000,
+            (mouse_x + x_offset, mouse_y + y_offset),
+            2
+        )
+        robots_at_target += robot.position.get_distance_to(Position(mouse_x + x_offset, mouse_y + y_offset)) < 1
+
+    if robots_at_target == len(robots):
+        color = [0, 255, 0]
+    else:
+        color = [255, 0, 0]
+    text = font.render(f'{robots_at_target} on target', True, color)
+    screen.blit(text, (10, 60))
 
     # # lock position
     # robot.position[0] = 500
