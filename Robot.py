@@ -24,7 +24,7 @@ class Robot(ABC):
         # force = target_position - (self.position + self.velocity)
         # force.rotation = self.position.rotation
         # self.apply_force(force, time_delta_seconds, limit_acceleration=True)
-        if target_position.get_distance_to(self.position) < 1:
+        if target_position.get_distance_to(self.position) < 2:
             self.velocity = Position(0, 0)
             return
 
