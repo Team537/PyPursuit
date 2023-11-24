@@ -18,9 +18,9 @@ if __name__ == "__main__":
     last_time = time.time()
 
     # set up field, cursor, and robot
-    field = Field(pygame.image.load("images/TestField.png"))
-    cursor = Circle(5, 5, 10)
-    robot = BeeLineRobot(max_velocity=500)
+    field = Field(pygame.image.load("images/TestField.png"), margin=15)
+    cursor = Circle(5, 5, 3)
+    robot = BeeLineRobot(max_velocity=750)
     robot.position = Position(500, 500)
     mouse_x, mouse_y = pygame.mouse.get_pos()
 
@@ -51,29 +51,31 @@ if __name__ == "__main__":
 
         # update robot position
         if not pygame.mouse.get_pressed()[0]:
-            robot.go_to_position(robot.path_find(Position(mouse_x, mouse_y)), time_delta_seconds=time_delta_seconds, debug=False)
+            robot.go_to_position(robot.path_find(Position(mouse_x, mouse_y)), time_delta_seconds=time_delta_seconds,
+                                 debug=False)
 
         # check for collisions with cursor
         if pygame.sprite.collide_mask(cursor, field):
-            screen.blit(font.render(f"Collision", True, (255, 0, 0)), (10, 10))
             cursor.set_color((255, 0, 0, 255))
         else:
-            screen.blit(font.render(f"Collision", True, (255, 0, 0)), (10, 10))
             cursor.set_color((0, 255, 0, 255))
 
         # check for collisions with robot
-        if robot.collided_with_field(field):
+        if robot.collided_with_mask(field.mask):
             if not colliding:  # updates collision
                 collisions += 1
                 colliding = True  # this makes sure we don't call it multiple times in the same collision
             robot.sprite.set_color((255, 0, 0, 255))
+        elif robot.collided_with_mask(field.margin_mask):  # check if robot is in the margin
+            robot.sprite.set_color((255, 125, 0, 255))
         else:
             colliding = False
             robot.sprite.set_color((0, 255, 0, 255))
 
+        """Draw everything"""
         # update background
         screen.fill((255, 255, 255))
-        field.draw(screen)
+        field.draw(screen, show_margin_mask=True)
 
         # update robot display
         robot.display(screen)
@@ -90,3 +92,6 @@ if __name__ == "__main__":
         screen.blit(font.render(f"Framerate: {round(1 / (time_delta_seconds + 0.00001), 2)}", True, (255, 0, 0)),
                     (10, 90))
         pygame.display.update()
+
+        # tick clock
+        clock.tick(-1)  # change this to change the framerate

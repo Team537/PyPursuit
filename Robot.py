@@ -1,4 +1,7 @@
 from abc import ABC, abstractmethod
+
+import pygame.mask
+
 from Position import Position
 from Field import Circle, Field
 from math import cos, sin, pi
@@ -102,12 +105,12 @@ class Robot(ABC):
             print(f"{self.position=}")
             print(f"{force=}")
 
-    def collided_with_field(self, field: Field) -> bool:
+    def collided_with_mask(self, mask: pygame.mask.Mask) -> bool:
         """
         This function checks if the robot has collided with the field        :param field:  to check
         :return: If the robot has collided with the field
         """
-        return not self.sprite.can_move_to_position(field.mask, self.position.x, self.position.y)
+        return self.sprite.mask.overlap_area(mask, (-self.position.x + self.sprite.radius, -self.position.y + self.sprite.radius)) > 0
 
     @staticmethod
     def clamp(value, max_value, min_value):
