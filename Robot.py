@@ -24,12 +24,19 @@ class Robot(ABC):
         # force = target_position - (self.position + self.velocity)
         # force.rotation = self.position.rotation
         # self.apply_force(force, time_delta_seconds, limit_acceleration=True)
+<<<<<<< HEAD
         if target_position.get_distance_to(self.position) < 2:
+=======
+        if target_position.get_distance_to(self.position) < 3:
+>>>>>>> ebf359ec7c565ee6c180847f4e0a14e177c6e02a
             self.velocity = Position(0, 0)
             return
 
         rotation_to = self.position.get_angle_to(target_position)
+<<<<<<< HEAD
         print(f"{rotation_to=}")
+=======
+>>>>>>> ebf359ec7c565ee6c180847f4e0a14e177c6e02a
 
         self.velocity.x = cos(rotation_to * pi / 180) * self.max_velocity
         self.velocity.y = sin(rotation_to * pi / 180) * self.max_velocity
