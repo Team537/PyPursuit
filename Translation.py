@@ -9,6 +9,9 @@ class Translation:
     def get_distance_to(self, other):
         return math.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
 
+    def as_list(self):
+        return [self.x, self.y]
+
     def __add__(self, other):
         return Translation(self.x + other.x, self.y + other.y)
 

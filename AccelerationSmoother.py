@@ -38,6 +38,9 @@ class AccelerationSmoother:
     def get_direction(self):
         return self._current_direction
 
+    def get_value(self):
+        return self._current_value
+
     def update(self, current_target : float = None, print_debug = False, time_difference = None):
         #   update current target
         if current_target is not None:
