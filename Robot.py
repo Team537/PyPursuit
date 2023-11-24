@@ -24,12 +24,18 @@ class Robot(ABC):
         # force = target_position - (self.position + self.velocity)
         # force.rotation = self.position.rotation
         # self.apply_force(force, time_delta_seconds, limit_acceleration=True)
+
         if target_position.get_distance_to(self.position) < 2:
+
+         if target_position.get_distance_to(self.position) < 2: # deadzone to prevent jittering
+
             self.velocity = Position(0, 0)
             return
 
         rotation_to = self.position.get_angle_to(target_position)
+
         print(f"{rotation_to=}")
+
 
         self.velocity.x = cos(rotation_to * pi / 180) * self.max_velocity
         self.velocity.y = sin(rotation_to * pi / 180) * self.max_velocity
@@ -101,8 +107,7 @@ class Robot(ABC):
 
     def collided_with_field(self, field: Field) -> bool:
         """
-        This function checks if the robot has collided with the field
-        :param field: The field to check
+        This function checks if the robot has collided with the field        :param field:  to check
         :return: If the robot has collided with the field
         """
         return not self.sprite.can_move_to_position(field.mask, self.position.x, self.position.y)

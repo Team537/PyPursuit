@@ -12,6 +12,12 @@ if __name__ == "__main__":
     pygame.display.set_caption(f"Collision Test with Field")
     font = pygame.font.Font('freesansbold.ttf', 32)
 
+
+    # set up clock
+    clock = pygame.time.Clock()
+    last_time = time.time()
+
+
     # set up field, cursor, and robot
     field = Field(pygame.image.load("images/TestField.png"))
     cursor = Circle(5, 5, 10)
@@ -34,6 +40,7 @@ if __name__ == "__main__":
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:  # reset collision count if r is pressed
                     collisions = 0
+
 
         # update background
         screen.fill((255, 255, 255))
@@ -71,3 +78,46 @@ if __name__ == "__main__":
         cursor.draw(screen)
         pygame.display.update()
         time.sleep(1 / 60)
+
+        # update time
+        time_delta_seconds = time.time() - last_time
+        last_time = time.time()
+        print(f"{time_delta_seconds=}")
+
+        # update background
+        screen.fill((255, 255, 255))
+        field.draw(screen)
+
+        # update mouse position
+        if not pygame.mouse.get_pressed()[2]:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            cursor.move_to(mouse_x, mouse_y)
+
+        # check for collisions with cursor
+        if pygame.sprite.collide_mask(cursor, field):
+            screen.blit(font.render(f"Collision", True, (255, 0, 0)), (10, 10))
+            cursor.set_color((255, 0, 0, 255))
+        else:
+            screen.blit(font.render(f"Collision", True, (255, 0, 0)), (10, 10))
+            cursor.set_color((0, 255, 0, 255))
+
+        # update robot position
+        robot.go_to_position(Position(mouse_x, mouse_y), time_delta_seconds=time_delta_seconds, debug=False)
+        robot.display(screen)
+
+        # check for collisions with robot
+        if robot.collided_with_field(field):
+            if not colliding:  # updates collision
+                collisions += 1
+                colliding = True  # this makes sure we don't call it multiple times in the same collision
+            robot.sprite.set_color((255, 0, 0, 255))
+        else:
+            colliding = False
+            robot.sprite.set_color((0, 255, 0, 255))
+
+        # draw everything
+        screen.blit(font.render(f"Collisions: {collisions}", True, (255, 0, 0)), (10, 50))
+        cursor.draw(screen)
+        screen.blit(font.render(f"Framerate: {round(1/(time_delta_seconds + 0.00001), 2)}", True, (255, 0, 0)), (10, 90))
+        pygame.display.update()
+
