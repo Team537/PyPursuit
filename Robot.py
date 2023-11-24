@@ -33,10 +33,7 @@ class Robot(ABC):
             return
 
         rotation_to = self.position.get_angle_to(target_position)
-
-        print(f"{rotation_to=}")
-
-
+        
         self.velocity.x = cos(rotation_to * pi / 180) * self.max_velocity
         self.velocity.y = sin(rotation_to * pi / 180) * self.max_velocity
 

@@ -12,11 +12,9 @@ if __name__ == "__main__":
     pygame.display.set_caption(f"Collision Test with Field")
     font = pygame.font.Font('freesansbold.ttf', 32)
 
-
     # set up clock
     clock = pygame.time.Clock()
     last_time = time.time()
-
 
     # set up field, cursor, and robot
     field = Field(pygame.image.load("images/TestField.png"))
@@ -44,7 +42,6 @@ if __name__ == "__main__":
         # update time
         time_delta_seconds = time.time() - last_time
         last_time = time.time()
-        print(f"{time_delta_seconds=}")
 
         # update mouse position
         if not pygame.mouse.get_pressed()[2]:
@@ -58,8 +55,6 @@ if __name__ == "__main__":
         else:
             screen.blit(font.render(f"Collision", True, (255, 0, 0)), (10, 10))
             cursor.set_color((0, 255, 0, 255))
-
-
 
         # check for collisions with robot
         if robot.collided_with_field(field):
@@ -85,4 +80,3 @@ if __name__ == "__main__":
         screen.blit(font.render(f"Framerate: {round(1 / (time_delta_seconds + 0.00001), 2)}", True, (255, 0, 0)),
                     (10, 90))
         pygame.display.update()
-
