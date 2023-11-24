@@ -19,36 +19,42 @@ class Field(sprite.Sprite):
             for y in range(self.image.get_height()):
                 if self.image.get_at((x, y)) == (255, 255, 255, 255):
                     self.image.set_at((x, y), (255, 255, 255, 0))
+
         # sets stuff up for collision detection
         self.rect = self.image.get_rect()
         self.rect.center = (self.width / 2, self.height / 2)
         self.mask = pygame.mask.from_surface(self.image)
+
+        # margins
         self.margin_mask = None
+        self.margin = margin
+        self._margin_mask_surface_cache = None  # this is a performance optimization. (cache, has_changed)
         self.set_margin_mask(margin)
 
-    def draw(self, screen, show_margin_mask=False, _margin_mask_surface=[None]):
+    def draw(self, screen, show_margin_mask=False):
         """Draws the field to the given surface
         :param screen: the surface to draw to
         :param show_margin_mask: if the margin mask should be drawn
-        :param _margin_mask_surface: don't use this, it's for internal use only
+        :param _margin_mask_surface_cache: don't use this, it's for internal use only
         :return: None"""
-        if _margin_mask_surface == [None]:
-            original = self.image.copy()
-            margins = self.margin_mask.to_surface(setcolor=(125, 125, 125), unsetcolor=(255, 255, 255))
-            margins.blit(original, (0, 0))
-            _margin_mask_surface[0] = margins
+
+        # draw the field
         if show_margin_mask:
-            screen.blit(_margin_mask_surface[0], self.rect)
+            screen.blit(self._margin_mask_surface_cache, self.rect)
         else:
             screen.blit(self.image, self.rect)
 
     def set_margin_mask(self, margin: int) -> pygame.mask.Mask:
         """Sets the margin mask to the given margin.
-        Note that this is an incredibly slow operation, so it should only be done once
+        Note that this is an incredibly slow operation, so it should only be done once.
         :param margin: the margin to set to
         :return: None"""
+
+        self.margin = margin
+        
         if margin == 0:
             self.margin_mask = self.mask
+            self._update_margin_mask_cache()
             return self.margin_mask
 
         margin_mask = pygame.mask.from_surface(self.image, margin).to_surface(unsetcolor=(255, 255, 255, 0))
@@ -62,7 +68,20 @@ class Field(sprite.Sprite):
             pygame.draw.circle(margin_mask, (255, 255, 255, 255), (x, y), margin)
 
         self.margin_mask = pygame.mask.from_surface(margin_mask)
+        self._update_margin_mask_cache()
+
         return self.margin_mask
+
+    # this part is a performance optimization. it basically caches the margin mask surface so it doesn't have to
+    # be recreated every frame
+    def _update_margin_mask_cache(self):
+        """Updates the margin mask cache. This is a performance optimization, and should not be called manually"""
+        print("updating margin mask cache")
+        original = self.image.copy()
+        margins = self.margin_mask.to_surface(setcolor=(125, 125, 125), unsetcolor=(255, 255, 255))
+        margins.blit(original, (0, 0))
+        self._margin_mask_surface_cache = margins
+
 
 class Circle(sprite.Sprite):
     def __init__(self, x: float, y: float, radius: float):

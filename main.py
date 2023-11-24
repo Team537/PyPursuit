@@ -6,6 +6,13 @@ from Field import Field, Circle
 from Position import Position
 from RayCast import ray_cast
 
+
+def time_function(func, *args, **kwargs):
+    start_time = time.time()
+    func(*args, **kwargs)
+    return time.time() - start_time
+
+
 if __name__ == "__main__":
     # set up pygame
     pygame.init()
@@ -18,7 +25,8 @@ if __name__ == "__main__":
     last_time = time.time()
 
     # set up field, cursor, and robot
-    field = Field(pygame.image.load("images/TestField.png"), margin=15)
+    margin = 15
+    field = Field(pygame.image.load("images/TestField.png"), margin=margin)
     cursor = Circle(5, 5, 3)
     robot = BeeLineRobot(max_velocity=750)
     robot.position = Position(500, 500)
@@ -44,15 +52,22 @@ if __name__ == "__main__":
         time_delta_seconds = time.time() - last_time
         last_time = time.time()
 
-        # update mouse position
+        # pause the cursor if the right mouse button is pressed
         if not pygame.mouse.get_pressed()[2]:
             mouse_x, mouse_y = pygame.mouse.get_pos()
             cursor.move_to(mouse_x, mouse_y)
 
-        # update robot position
+        # pauses the robot if the left mouse button is pressed
         if not pygame.mouse.get_pressed()[0]:
             robot.go_to_position(robot.path_find(Position(mouse_x, mouse_y)), time_delta_seconds=time_delta_seconds,
                                  debug=False)
+
+        # set margin mask if the middle mouse button is pressed
+        # NOTE: this operation is so slow that it may cause the physics to act weirdly, because the time_delta is so big
+        if pygame.mouse.get_pressed()[1] and field.margin == margin:
+            field.set_margin_mask(abs(margin - 15))  # weird way to toggle between 0 and 15
+        elif not pygame.mouse.get_pressed()[1] and field.margin != margin:  # super hacky way to run once per click
+            margin = field.margin
 
         # check for collisions with cursor
         if pygame.sprite.collide_mask(cursor, field):
