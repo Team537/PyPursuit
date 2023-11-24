@@ -4,6 +4,7 @@ import pygame
 from BeeLineRobot import BeeLineRobot
 from Field import Field, Circle
 from Position import Position
+from RayCast import ray_cast
 
 if __name__ == "__main__":
     # set up pygame
@@ -19,7 +20,7 @@ if __name__ == "__main__":
     # set up field, cursor, and robot
     field = Field(pygame.image.load("images/TestField.png"))
     cursor = Circle(5, 5, 10)
-    robot = BeeLineRobot(max_accelerations=Position(500, 500, 10), max_velocity=250)
+    robot = BeeLineRobot(max_velocity=500)
     robot.position = Position(500, 500)
     mouse_x, mouse_y = pygame.mouse.get_pos()
 
@@ -48,6 +49,10 @@ if __name__ == "__main__":
             mouse_x, mouse_y = pygame.mouse.get_pos()
             cursor.move_to(mouse_x, mouse_y)
 
+        # update robot position
+        if not pygame.mouse.get_pressed()[0]:
+            robot.go_to_position(robot.path_find(Position(mouse_x, mouse_y)), time_delta_seconds=time_delta_seconds, debug=False)
+
         # check for collisions with cursor
         if pygame.sprite.collide_mask(cursor, field):
             screen.blit(font.render(f"Collision", True, (255, 0, 0)), (10, 10))
@@ -70,9 +75,14 @@ if __name__ == "__main__":
         screen.fill((255, 255, 255))
         field.draw(screen)
 
-        # update robot position
-        robot.go_to_position(Position(mouse_x, mouse_y), time_delta_seconds=time_delta_seconds, debug=False)
+        # update robot display
         robot.display(screen)
+
+        # ray cast to cursor
+        if ray_cast(robot.position, Position(mouse_x, mouse_y), field.mask):
+            pygame.draw.line(screen, (255, 0, 0), (robot.position.x, robot.position.y), (mouse_x, mouse_y), 5)
+        else:
+            pygame.draw.line(screen, (0, 255, 0), (robot.position.x, robot.position.y), (mouse_x, mouse_y), 5)
 
         # draw everything
         screen.blit(font.render(f"Collisions: {collisions}", True, (255, 0, 0)), (10, 50))

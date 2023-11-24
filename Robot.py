@@ -40,11 +40,11 @@ class Robot(ABC):
         self.update(time_delta_seconds, debug=False)
 
     @abstractmethod
-    def path_find(self, target_position: Position, time_delta_seconds: float, debug=False) -> Position:
+    def path_find(self, target_position: Position, debug=False) -> Position:
         """
         This function should feed the robot positions to go to
         :param target_position: The position to go to
-        :param time_delta_seconds: The time since the last update
+        :param : The time since the last update
         :param debug: If the function should print debug statements
         :return: The position the robot should go to
         """
