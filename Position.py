@@ -26,11 +26,7 @@ class Position(Translation):
     def scale_to(self, scale: "Position | float | int", only_downscale=False):
         if isinstance(scale, Position):
             other = scale.as_positive()
-<<<<<<< HEAD
             this = self.as_positive() + Position(0.0000001, 0.0000001, 0.0000001)
-=======
-            this = self.as_positive() + Position(0.0000001, 0.0000001, 0.0000001) # prevent division by 0
->>>>>>> ebf359ec7c565ee6c180847f4e0a14e177c6e02a
             scale = min(other.as_list()[:2]) / max(this.as_list()[:2])
         elif isinstance(scale, float) or isinstance(scale, int):
             scale = scale / self.get_distance_to(Position(0, 0))
