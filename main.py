@@ -1,101 +1,82 @@
-import math
-import os
-import random
 import time
 
 import pygame
-
-from Robot import Robot
+from BeeLineRobot import BeeLineRobot
+from Field import Field, Circle
 from Position import Position
 
-last_time = time.time_ns() / 1e9
-def every_delay(delay):
-    global last_time
-    if time.time_ns() / 1e9 - last_time >= delay:
-        last_time = time.time_ns() / 1e9
-        return True
-    return False
+if __name__ == "__main__":
+    # set up pygame
+    pygame.init()
+    screen = pygame.display.set_mode((1000, 1000))  # (field.width, field.height))
+    pygame.display.set_caption(f"Collision Test with Field")
+    font = pygame.font.Font('freesansbold.ttf', 32)
 
-pygame.init()
+    # set up clock
+    clock = pygame.time.Clock()
+    last_time = time.time()
 
-screen = pygame.display.set_mode((1000, 1000))
-pygame.display.set_caption(f"Robot Test")
-
-font = pygame.font.Font('freesansbold.ttf', 32)
-
-scale = 1
-
-robots = [
-    Robot(
-    Position(screen.get_size()[0] / 2, screen.get_size()[1] / 2),
-    max_accelerations=Position(100 * scale, 100 * scale, 150 * scale),
-    # max_accelerations=Position(100 * random.random() * scale, 100 * random.random() * scale, 60 + 50 * random.random()),
-    max_velocity=250 * scale) for i in range(50**2)
-]
-
-running = True
-
-FPS = 240
-
-time_scale = 5
-
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-
-    time_passed = (time.time_ns() / 1e9 - last_time) * time_scale
-    last_time = time.time_ns() / 1e9
-
+    # set up field, cursor, and robot
+    field = Field(pygame.image.load("images/TestField.png"))
+    cursor = Circle(5, 5, 10)
+    robot = BeeLineRobot(max_accelerations=Position(500, 500, 10), max_velocity=250)
+    robot.position = Position(500, 500)
     mouse_x, mouse_y = pygame.mouse.get_pos()
-    screen.fill((255, 255, 255))
 
-    pygame.draw.circle(
-        screen, 0XFF0000,
-        (mouse_x, mouse_y),
-        2
-    )
+    # track collisions
+    collisions = 0
+    colliding = False
 
-    text = font.render(f'{time_scale}X', True, [0, 0, 255])
-    screen.blit(text, (10, 10))
+    # main loop
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False  # quit when the window is closed
 
-    robots_at_target = 0
+            # check for key presses
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:  # reset collision count if r is pressed
+                    collisions = 0
 
-    for index, robot in enumerate(robots):
-        length = math.ceil(math.sqrt(len(robots)))
-        x_offset = (index % length - length / 2) * 15 + 7.5
-        y_offset = (index // length - length / 2) * 15 + 7.5
+        # update time
+        time_delta = time.time() - last_time
+        last_time = time.time()
+        time_delta_seconds = time_delta / 1000
 
-        if pygame.mouse.get_pressed()[0]:
-            x_offset += random.randrange(-1000, 1000)
-            y_offset += random.randrange(-1000, 1000)
-        elif pygame.mouse.get_pressed()[2]:
-            x_offset *= 80
-            y_offset *= 80
+        # update background
+        screen.fill((255, 255, 255))
+        field.draw(screen)
 
-        robot.go_to_position(Position(mouse_x + x_offset, mouse_y + y_offset), time_difference=time_passed)
-        robot.display(pygame, screen)
+        # update mouse position
+        if not pygame.mouse.get_pressed()[2]:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            cursor.move_to(mouse_x, mouse_y)
 
-        pygame.draw.circle(
-            screen, 0XFF0000,
-            (mouse_x + x_offset, mouse_y + y_offset),
-            2
-        )
-        robots_at_target += robot.position.get_distance_to(Position(mouse_x + x_offset, mouse_y + y_offset)) < 1
+        # check for collisions with cursor
+        if pygame.sprite.collide_mask(cursor, field):
+            screen.blit(font.render(f"Collision", True, (255, 0, 0)), (10, 10))
+            cursor.set_color((255, 0, 0, 255))
+        else:
+            screen.blit(font.render(f"Collision", True, (255, 0, 0)), (10, 10))
+            cursor.set_color((0, 255, 0, 255))
 
-    if robots_at_target == len(robots):
-        color = [0, 255, 0]
-    else:
-        color = [255, 0, 0]
-    text = font.render(f'{robots_at_target} on target', True, color)
-    screen.blit(text, (10, 60))
+        # update robot position
+        robot.go_to_position(Position(mouse_x, mouse_y), time_delta_seconds=time_delta, debug=False)
+        robot.display(screen)
 
-    text = font.render(f'{1/time_passed * time_scale} FPS', True, color)
-    screen.blit(text, (10, 90))
+        # check for collisions with robot
+        if robot.collided_with_field(field):
+            if not colliding:  # updates collision
+                collisions += 1
+                colliding = True  # this makes sure we don't call it multiple times in the same collision
+            robot.sprite.set_color((255, 0, 0, 255))
+        else:
+            colliding = False
+            robot.sprite.set_color((0, 255, 0, 255))
 
-    # # lock position
-    # robot.position[0] = 500
-    # robot.position[1] = 500
-
-    time.sleep(1 / FPS)
-    pygame.display.flip()
+        # draw everything
+        screen.blit(font.render(f"Collisions: {collisions}", True, (255, 0, 0)), (10, 50))
+        screen.blit(font.render(f"Framerate: {round(clock.get_fps(), 2)}", True, (255, 0, 0)), (10, 90))
+        cursor.draw(screen)
+        pygame.display.update()

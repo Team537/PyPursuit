@@ -1,84 +1,122 @@
-import time
-
-from Position import Translation, Position
-from AccelerationSmoother import AccelerationSmoother, sign, get_current_time
-import math
-
-from Rotation import Rotation
+from abc import ABC, abstractmethod
+from Position import Position
+from Field import Circle, Field
+from math import cos, sin, pi
 
 
-class Robot:
-    def __init__(self, starting_position: Position = Position(0, 0),
-                 max_accelerations: Position = Position(100, 100, 100),
-                 max_velocity: float = 100):
+class Robot(ABC):
+    def __init__(self, starting_position: Position = Position(0, 0), max_accelerations: Position = Position(100, 100),
+                 max_velocity: float = 100, sprite: Circle = Circle(0, 0, 10)):
         self.position = starting_position
-        self.velocity = Position(0, 0, 0)
-        self.max_accelerations = max_accelerations  # the fastest the robot cna accelearte (rotation doens't do anythin)
-        self.max_velocity = max_velocity  # the heighest speed the robot can go
-        self.last_update_time = 0
-        self._magnitude_smoother = AccelerationSmoother(
-            Position(0, 0, 0).get_distance_to(self.max_accelerations),
-            initial_value=self.position.get_distance_to(starting_position),
-            max_value=max_velocity,
-            min_value=0
-        )
-        self._rotation_smoother = AccelerationSmoother(
-            self.max_accelerations[2], initial_value=self.position[2]
-        )
+        self.velocity = Position(0, 0)
+        self.max_velocity = max_velocity
+        self.max_accelerations = max_accelerations
+        self.sprite = sprite
 
-    def go_to_position(self, target_position: Position, debug=False, time_difference=None):
-        if time_difference is None:
-            current_updated_time = get_current_time()
-            time_difference = current_updated_time - self.last_update_time
-            self.last_update_time = current_updated_time
-        else:
-            self.last_update_time += time_difference
+    def go_to_position(self, target_position: Position, time_delta_seconds: float, debug=False) -> None:
+        """
+        This function makes the robot go to the target position
+        Should be overriden depending on what type of robot it is & how you want it to accelerate and deaccelearte
+        :param target_position: The position to go to
+        :param time_delta_seconds: The time since the last update
+        :param debug: Prints debug statements if true
+        :return:"""
+        # force = target_position - (self.position + self.velocity)
+        # force.rotation = self.position.rotation
+        # self.apply_force(force, time_delta_seconds, limit_acceleration=True)
+        if target_position.get_distance_to(self.position) < 3:
+            self.velocity = Position(0, 0)
+            return
 
-        # calculate targets
-        target_magnitude = self.position.get_distance_to(target_position)
-        target_rotation = Rotation(self.position.get_angle_to(target_position))
+        rotation_to = self.position.get_angle_to(target_position)
+
+        self.velocity.x = cos(rotation_to * pi / 180) * self.max_velocity
+        self.velocity.y = sin(rotation_to * pi / 180) * self.max_velocity
+
+        self.update(time_delta_seconds, debug=False)
+
+    @abstractmethod
+    def path_find(self, target_position: Position, time_delta_seconds: float, debug=False) -> Position:
+        """
+        This function should feed the robot positions to go to
+        :param target_position: The position to go to
+        :param time_delta_seconds: The time since the last update
+        :param debug: If the function should print debug statements
+        :return: The position the robot should go to
+        """
+        pass
+
+    @abstractmethod
+    def display(self, screen) -> None:
+        """
+        This function should display the robot on the screen using pygame
+        :param screen:
+        :return:
+        """
+        pass
+
+    def update(self, time_delta_seconds: float, debug=False) -> None:
+        """
+        This function updates the robot's position based on its current velocity
+        :param time_delta_seconds: The time since the last update
+        :param debug: Prints position and velocity if true
+        :return:
+        """
+        self.position += self.velocity * time_delta_seconds
         if debug:
-            print(f"{target_magnitude=}\n{target_rotation=}\n")
+            print(f"{self.position=}")
+            print(f"{self.velocity=}")
 
-        #   calculate speed
-        magnitude = self._magnitude_smoother.update(current_target=target_magnitude, print_debug=debug,
-                                                    time_difference=time_difference)
-        rotation = self._rotation_smoother.update(current_target=target_rotation, print_debug=debug,
-                                                  time_difference=time_difference)
-        self.position[2] = rotation
+    def apply_force(self, force: Position, time_delta_seconds: float, limit_acceleration: bool = False,
+                    apply_velocity: bool = True, debug: bool = False) -> None:
+        """ This function applies a force to the robot
+        :param debug:
+        :param force: The force to apply to the robot
+        :param time_delta_seconds: The time since the last update
+        :param limit_acceleration: If the acceleration should be limited to the robot's max
+        :param apply_velocity: If the new velocity should be applied to the robot's position
+        :return:
+        """
+        # limits acceleration
+        if limit_acceleration:
+            force.scale_to(self.max_accelerations)
 
-        #   calculate velocity
-        self.velocity.x = math.cos(rotation * math.pi / 180) * magnitude
-        self.velocity.y = math.sin(rotation * math.pi / 180) * magnitude
+        #   calculates velocity
+        self.velocity += force * time_delta_seconds
+
+        #   limits velocity
+        self.velocity.scale_to(self.max_velocity, only_downscale=True)
+
+        if apply_velocity:
+            self.update(time_delta_seconds, debug=False)
 
         if debug:
-            print(f"{rotation=}\n{magnitude=}\n{self.velocity=}\n")
-
-        #   calculate position
-        self.position.x += self.velocity.x * time_difference
-        self.position.y += self.velocity.y * time_difference
-
-        #   check if we are at the target
-        # if sign(target_position.x - self.position.x) != sign(self.velocity.x):
-        #     self.velocity.x = 0
-        #     self.position.x = target_position.x
-
-        #         if sign(target_position.y - self.position.y) != sign(self.velocity.y):
-        #             self.velocity.y = 0
-        #             self.position.y = target_position.y
-
-        #   return speed
-        return self.velocity
-
-    def display(self, pygame, screen, body_color=0x00FF00, target_color=0x000FF):
-        pygame.draw.circle(
-            screen, body_color,
-            (int(self.position.x), int(self.position.y)),
-            10
-        )
-
-        pygame.draw.line(screen, target_color,
-                         (self.position[0], self.position[1]),
-                         (self.position[0] + self.velocity[0], self.position[1] + self.velocity[1]),
-                         5
+            print(
+                '=========================\n'
             )
+            print(f"{self.velocity=}")
+            print(f"{self.position=}")
+            print(f"{force=}")
+
+    def collided_with_field(self, field: Field) -> bool:
+        """
+        This function checks if the robot has collided with the field
+        :param field: The field to check
+        :return: If the robot has collided with the field
+        """
+        return not self.sprite.can_move_to_position(field.mask, self.position.x, self.position.y)
+
+    @staticmethod
+    def clamp(value, max_value, min_value):
+        """
+        This function clamps a value between a max and min value
+        :param value:
+        :param max_value:
+        :param min_value:
+        :return:
+        """
+        if max_value is not None:
+            value = min(value, max_value)
+        if min_value is not None:
+            value = max(value, min_value)
+        return value
