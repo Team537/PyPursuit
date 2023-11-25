@@ -30,6 +30,11 @@ def ray_cast(start: Position, end: Position, mask: Mask, return_point: bool = Fa
         #   moves the current position
         current_position += step_size
 
+        #   check if the current position is out of bounds
+        if not (0 <= current_position.x < mask.get_size()[0] and 0 <= current_position.y < mask.get_size()[1]):
+            #   returns false if it isn't
+            return False
+
         #   checks if the current position is colliding with the mask
         if mask.get_at((int(current_position.x), int(current_position.y))):
             #   returns true if it is

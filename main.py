@@ -65,7 +65,7 @@ if __name__ == "__main__":
         # set margin mask if the middle mouse button is pressed
         # NOTE: this operation is so slow that it may cause the physics to act weirdly, because the time_delta is so big
         if pygame.mouse.get_pressed()[1] and field.margin == margin:
-            field.set_margin_mask(abs(margin - 15))  # weird way to toggle between 0 and 15
+            field.set_margin_mask(abs(margin - 15))  # quirky way to toggle between 0 and 15
         elif not pygame.mouse.get_pressed()[1] and field.margin != margin:  # super hacky way to run once per click
             margin = field.margin
 
@@ -109,4 +109,4 @@ if __name__ == "__main__":
         pygame.display.update()
 
         # tick clock
-        clock.tick(-1)  # change this to change the framerate
+        clock.tick(-1)  # change this to change the framerate. -1 means unlimited

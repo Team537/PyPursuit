@@ -3,7 +3,7 @@ from pygame import sprite
 
 
 class Field(sprite.Sprite):
-    def __init__(self, image: pygame.image, margin: int = 0):
+    def __init__(self, image: pygame.image, margin: int = 0, margin_shape="circle"):
         super().__init__()
         self.width = image.get_width()
         self.height = image.get_height()
@@ -29,7 +29,7 @@ class Field(sprite.Sprite):
         self.margin_mask = None
         self.margin = margin
         self._margin_mask_surface_cache = None  # this is a performance optimization. (cache, has_changed)
-        self.set_margin_mask(margin)
+        self.set_margin_mask(margin, margin_shape)
 
     def draw(self, screen, show_margin_mask=False):
         """Draws the field to the given surface
@@ -44,7 +44,7 @@ class Field(sprite.Sprite):
         else:
             screen.blit(self.image, self.rect)
 
-    def set_margin_mask(self, margin: int) -> pygame.mask.Mask:
+    def set_margin_mask(self, margin: int, margin_shape="circle") -> pygame.mask.Mask:
         """Sets the margin mask to the given margin.
         Note that this is an incredibly slow operation, so it should only be done once.
         :param margin: the margin to set to
@@ -64,8 +64,14 @@ class Field(sprite.Sprite):
                 if margin_mask.get_at((x, y)) == (255, 255, 255, 255):
                     points.append((x, y))
 
-        for x, y in points:
-            pygame.draw.circle(margin_mask, (255, 255, 255, 255), (x, y), margin)
+        if margin_shape == "circle":
+            for x, y in points:
+                pygame.draw.circle(margin_mask, (255, 255, 255, 255), (x, y), margin)
+        elif margin_shape == "square":
+            for x, y in points:
+                pygame.draw.rect(margin_mask, (255, 255, 255, 255), (x - margin, y - margin, margin * 2, margin * 2))
+        else:
+            raise ValueError("margin_shape must be either 'circle' or 'square'")
 
         self.margin_mask = pygame.mask.from_surface(margin_mask)
         self._update_margin_mask_cache()
