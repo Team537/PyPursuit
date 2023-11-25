@@ -25,7 +25,7 @@ if __name__ == "__main__":
     last_time = time.time()
 
     # set up field, cursor, and robot
-    margin = 15
+    margin = 5
     field = Field(pygame.image.load("images/TestField.png"), margin=margin)
     cursor = Circle(5, 5, 3)
     robot = BeeLineRobot(max_velocity=750)
