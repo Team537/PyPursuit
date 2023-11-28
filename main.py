@@ -60,23 +60,15 @@ def win_screen():
 
 def loose_screen_jump():
     global run
-    a = 10
+    a = 30
     if run == [None]:
-        time.sleep(5)
+        time.sleep(mad_cause_bad)
         boo = pygame.image.load("images/boo.png")
         boo = pygame.transform.scale(boo, (screen.get_size()[0] + a * 2, screen.get_size()[1] + a * 2))
         run[0] = boo
-<<<<<<< Updated upstream
-        pygame.mixer.Sound.play(pygame.mixer.Sound("images/boo.mp3"))
-=======
-<<<<<<< HEAD
         fun = pygame.mixer.Sound("images/boo.mp3")
         fun.set_volume(0.6) # spare the ear drums
         pygame.mixer.Sound.play(fun)
-=======
-        pygame.mixer.Sound.play(pygame.mixer.Sound("images/boo.mp3"))
->>>>>>> bc2964f444c16525d9c04e4d78378fb22f042781
->>>>>>> Stashed changes
     screen.blit(run[0], (randint(-a, a), randint(-a, a)))
 
 def loose_screen():
@@ -107,7 +99,8 @@ if __name__ == "__main__":
     run = [None]
 
     state = 0
-    ben = 5.231
+    ben = 5.23112
+    mad_cause_bad = 1.24234
 
     # main loop
     running = True
@@ -120,15 +113,7 @@ if __name__ == "__main__":
             # check for key presses
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r or event.key == pygame.K_t:  # reset collision count if r is pressed
-<<<<<<< Updated upstream
-                    if not (bob and time.time() - bob < ben + 3):
-=======
-<<<<<<< HEAD
-                    if not (bob and time.time() - bob < ben + 8):
-=======
-                    if not (bob and time.time() - bob < ben + 3):
->>>>>>> bc2964f444c16525d9c04e4d78378fb22f042781
->>>>>>> Stashed changes
+                    if not (bob and time.time() - bob < ben + mad_cause_bad + 1):
                         state = 0
                         robot.position = Position(1, 1)
                         final_time = [None]
@@ -136,15 +121,7 @@ if __name__ == "__main__":
                         start_time = time.time()
                     if event.key == pygame.K_t:
                         bob = time.time()
-<<<<<<< Updated upstream
-                    elif time.time() - bob > ben + 3:
-=======
-<<<<<<< HEAD
-                    elif time.time() - bob > ben + 8:
-=======
-                    elif time.time() - bob > ben + 3:
->>>>>>> bc2964f444c16525d9c04e4d78378fb22f042781
->>>>>>> Stashed changes
+                    elif time.time() - bob > ben + mad_cause_bad + 1:
                         bob = False
 
         # update time
