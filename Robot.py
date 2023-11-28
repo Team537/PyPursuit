@@ -103,13 +103,17 @@ class Robot(ABC):
             print(f"{self.position=}")
             print(f"{force=}")
 
-    def collided_with_mask(self, mask: pygame.mask.Mask) -> bool:
+    def collided_with_mask(self, mask: pygame.mask.Mask, ignore_if: pygame.mask.Mask = None) -> bool:
         """
         This function checks if the robot has collided with the field        :param field:  to check
         :return: If the robot has collided with the field
         """
-        return self.sprite.mask.overlap_area(mask, (
-        -self.position.x + self.sprite.radius, -self.position.y + self.sprite.radius)) > 0
+        a = self.sprite.mask.overlap_area(mask, (-self.position.x + self.sprite.radius, -self.position.y + self.sprite.radius))
+        if ignore_if is not None:
+            b = self.sprite.mask.overlap_area(ignore_if, (-self.position.x + self.sprite.radius, -self.position.y + self.sprite.radius))
+            return a - b > 0
+        else:
+            return a > 0
 
     @staticmethod
     def clamp(value, max_value, min_value):

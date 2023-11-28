@@ -14,16 +14,21 @@ class Field(sprite.Sprite):
 
         # make image transparent
         self.image = self.image.convert_alpha()
+        self.green_mask = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        self.green_mask.fill((255, 255, 255, 0))
         # make white pixels transparent
         for x in range(self.image.get_width()):
             for y in range(self.image.get_height()):
                 if self.image.get_at((x, y)) == (255, 255, 255, 255):
                     self.image.set_at((x, y), (255, 255, 255, 0))
+                elif self.image.get_at((x, y)) == (0, 255, 0, 255):
+                    self.green_mask.set_at((x, y), (255, 255, 255, 255))
 
         # sets stuff up for collision detection
         self.rect = self.image.get_rect()
         self.rect.center = (self.width / 2, self.height / 2)
         self.mask = pygame.mask.from_surface(self.image)
+        self.green_mask = pygame.mask.from_surface(self.green_mask)
 
         # margins
         self.margin_mask = None
