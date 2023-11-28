@@ -18,7 +18,7 @@ class Robot(ABC):
 
     def go_to_position(self, target_position: Position, time_delta_seconds: float, debug=False) -> None:
         """
-        This function makes the robot go to the target position
+        This function makes the robot go to the target position.
         Should be overriden depending on what type of robot it is & how you want it to accelerate and deaccelearte
         :param target_position: The position to go to
         :param time_delta_seconds: The time since the last update
@@ -28,19 +28,17 @@ class Robot(ABC):
         # force.rotation = self.position.rotation
         # self.apply_force(force, time_delta_seconds, limit_acceleration=True)
 
-        if target_position.get_distance_to(self.position) < 2:
-
-         if target_position.get_distance_to(self.position) < 2: # deadzone to prevent jittering
+        if target_position.get_distance_to(self.position) < 2:  # deadzone to prevent jittering
 
             self.velocity = Position(0, 0)
             return
 
         rotation_to = self.position.get_angle_to(target_position)
-        
+
         self.velocity.x = cos(rotation_to * pi / 180) * self.max_velocity
         self.velocity.y = sin(rotation_to * pi / 180) * self.max_velocity
 
-        self.update(time_delta_seconds, debug=False)
+        self.update(time_delta_seconds, debug=debug)
 
     @abstractmethod
     def path_find(self, target_position: Position, debug=False) -> Position:
@@ -110,7 +108,8 @@ class Robot(ABC):
         This function checks if the robot has collided with the field        :param field:  to check
         :return: If the robot has collided with the field
         """
-        return self.sprite.mask.overlap_area(mask, (-self.position.x + self.sprite.radius, -self.position.y + self.sprite.radius)) > 0
+        return self.sprite.mask.overlap_area(mask, (
+        -self.position.x + self.sprite.radius, -self.position.y + self.sprite.radius)) > 0
 
     @staticmethod
     def clamp(value, max_value, min_value):

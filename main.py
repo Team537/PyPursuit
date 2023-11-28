@@ -25,7 +25,7 @@ if __name__ == "__main__":
     last_time = time.time()
 
     # set up field, cursor, and robot
-    margin = 5
+    margin = 0
     field = Field(pygame.image.load("images/TestField.png"), margin=margin)
     cursor = Circle(5, 5, 3)
     robot = BeeLineRobot(max_velocity=750)
@@ -83,6 +83,7 @@ if __name__ == "__main__":
             robot.sprite.set_color((255, 0, 0, 255))
         elif robot.collided_with_mask(field.margin_mask):  # check if robot is in the margin
             robot.sprite.set_color((255, 125, 0, 255))
+            colliding = False
         else:
             colliding = False
             robot.sprite.set_color((0, 255, 0, 255))
