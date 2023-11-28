@@ -99,8 +99,8 @@ if __name__ == "__main__":
     run = [None]
 
     state = 0
-    ben = 5.23112
-    mad_cause_bad = 1.24234
+    ben = 3.23112
+    mad_cause_bad = 5.24234
 
     # main loop
     running = True
@@ -113,7 +113,7 @@ if __name__ == "__main__":
             # check for key presses
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r or event.key == pygame.K_t:  # reset collision count if r is pressed
-                    if not (bob and time.time() - bob < ben + mad_cause_bad + 1):
+                    if not (bob and time.time() - bob < ben + mad_cause_bad + 1 and time.time() - bob > ben):
                         state = 0
                         robot.position = Position(1, 1)
                         final_time = [None]
