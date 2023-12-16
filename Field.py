@@ -1,6 +1,6 @@
 import pygame
 from pygame import sprite
-
+from Utils.DebugPrint import DebugPrint
 
 class Field(sprite.Sprite):
     def __init__(self, image: pygame.image, margin: int = 0, margin_shape="circle"):
@@ -82,7 +82,7 @@ class Field(sprite.Sprite):
     # be recreated every frame
     def _update_margin_mask_cache(self):
         """Updates the margin mask cache. This is a performance optimization, and should not be called manually"""
-        print("updating margin mask cache")
+        DebugPrint.add_debug_function("updating margin mask cache")
         original = self.image.copy()
         margins = self.margin_mask.to_surface(setcolor=(125, 125, 125), unsetcolor=(255, 255, 255))
         margins.blit(original, (0, 0))

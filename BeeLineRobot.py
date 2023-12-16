@@ -1,5 +1,5 @@
 from Robot import Robot
-from Position import Position
+from Utils.Position import Position
 import pygame
 
 
@@ -8,8 +8,8 @@ class BeeLineRobot(Robot):
     This robot goes to the target position in a straight line
     """
 
-    def __init__(self, max_accelerations: Position = Position(100, 100, 100), max_velocity: float = 100):
-        super().__init__(max_velocity=max_velocity, max_accelerations=max_accelerations)
+    def __init__(self, max_velocity: float = 500, max_acceleration: float = 1000):
+        super().__init__(max_velocity=max_velocity, max_acceleration=max_acceleration)
         self.force = Position(0, 0, 0)
 
     def path_find(self, target_position: Position, debug=False) -> Position:

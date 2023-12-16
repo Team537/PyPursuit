@@ -5,6 +5,8 @@ from math import atan2, pi
 from time import time
 import pickle
 
+from Utils.DebugPrint import DebugPrint
+
 class SIGNavMesh:
     """
     This class represents a superimposed grid navigation mesh. The general idea is to generate a grid of points, mask
@@ -35,11 +37,11 @@ class SIGNavMesh:
             results = self.linearize(outline, threshold)
             self.points += results
 
-        print(f"There are {len(components)} components")
-        print(f"There are {len(self.points)} collinear points with a threshold of {threshold}")
-        print(f"There are {total_outline} total points")
-        print(f"Removed {total_outline - len(self.points)} collinear points")
-        print(f"Time taken: {time() - start_time}")
+        DebugPrint.add_debug_function(f"There are {len(components)} components")
+        DebugPrint.add_debug_function(f"There are {len(self.points)} collinear points with a threshold of {threshold}")
+        DebugPrint.add_debug_function(f"There are {total_outline} total points")
+        DebugPrint.add_debug_function(f"Removed {total_outline - len(self.points)} collinear points")
+        DebugPrint.add_debug_function(f"Time taken: {time() - start_time}")
 
     def linearize(self, points: list | tuple, threshold) -> list[int, int]:
         """
@@ -78,7 +80,7 @@ class SIGNavMesh:
                     if stop:
                         break
 
-        print(f"Added {len(points) - start_size} corners")
+        DebugPrint.add_debug_function(f"Added {len(points) - start_size} corners")
 
         # removes collinear points ADDITION METHOD
         remaining_points = []

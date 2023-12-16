@@ -1,5 +1,5 @@
 from pygame.mask import Mask
-from Position import Position
+from Utils.Position import Position
 from math import ceil
 
 
@@ -14,6 +14,9 @@ def ray_cast(start: Position, end: Position, mask: Mask, return_point: bool = Fa
 
     #   calculates the distance between the start and end
     distance = start.get_distance_to(end)
+    if distance == 0:
+        return False
+
     translation = (end - start)
 
     #   calculates the step size

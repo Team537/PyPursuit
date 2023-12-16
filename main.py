@@ -3,9 +3,10 @@ import time
 import pygame
 from BeeLineRobot import BeeLineRobot
 from Field import Field, Circle
-from Position import Position
-from RayCast import ray_cast
-
+from Utils.Position import Position
+from Utils.RayCast import ray_cast
+from Utils.DebugPrint import DebugPrint
+from Utils.DebugPrint import DebugPrint
 
 def time_function(func, *args, **kwargs):
     start_time = time.time()
@@ -14,6 +15,7 @@ def time_function(func, *args, **kwargs):
 
 
 if __name__ == "__main__":
+    DebugPrinter = DebugPrint(1)
     # set up pygame
     pygame.init()
     screen = pygame.display.set_mode((1000, 1000))  # (field.width, field.height))
@@ -28,7 +30,7 @@ if __name__ == "__main__":
     margin = 5
     field = Field(pygame.image.load("images/TestField.png"), margin=margin)
     cursor = Circle(5, 5, 3)
-    robot = BeeLineRobot(max_velocity=750)
+    robot = BeeLineRobot(max_velocity=150, max_acceleration = 450)
     robot.position = Position(500, 500)
     mouse_x, mouse_y = pygame.mouse.get_pos()
 
@@ -110,3 +112,5 @@ if __name__ == "__main__":
 
         # tick clock
         clock.tick(-1)  # change this to change the framerate. -1 means unlimited
+
+        DebugPrinter.update()

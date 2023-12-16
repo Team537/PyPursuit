@@ -1,5 +1,5 @@
 import time
-
+from Utils.DebugPrint import DebugPrint
 
 def sign(n):
     if n < 0:
@@ -35,13 +35,19 @@ class AccelerationSmoother:
             value = max(value, self._min_value)
         return value
 
+    def set_state(self, value):
+        self._current_value = value
+        self._current_target = value
+        self._current_direction = 0
+        self._current_acceleration = 0
+
     def get_direction(self):
         return self._current_direction
 
     def get_value(self):
         return self._current_value
 
-    def update(self, current_target : float = None, print_debug = False, time_difference = None):
+    def update(self, current_target : float = None, time_difference = None) -> float:
         #   update current target
         if current_target is not None:
             self._current_target = current_target
@@ -53,20 +59,14 @@ class AccelerationSmoother:
         else:
             self._last_time += time_difference
 
-        if print_debug: print(f"============\n{current_time=}\n{self._last_time=}\n{time_difference=}\n")
-
         self._current_direction = sign(self._current_target - self._current_value)
 
         #   calculate speed (DO NOT QUESTION THE BLACK MAGIC)
         # self._current_value += max(min(self._acceleration, abs(self._current_acceleration)), self._acceleration/20) * self._current_direction * time_difference
 
-        # print
-        if print_debug: print(f"{self._current_value=}\n{self._current_target=}\n{self._current_direction=}\n")
-
         # Simple update
         self._current_value += self._acceleration * self._current_direction * time_difference
         if sign(current_target - self._current_value) != self._current_direction:
-            if print_debug: print('I am here')
             self._current_value = current_target
 
         #clamp the value

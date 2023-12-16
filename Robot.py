@@ -2,19 +2,41 @@ from abc import ABC, abstractmethod
 
 import pygame.mask
 
-from Position import Position
-from Field import Circle, Field
+from Utils.Position import Position
+from Utils.AccelerationSmoother import AccelerationSmoother, sign
+from Field import Circle
 from math import cos, sin, pi
-
+from Utils.DebugPrint import DebugPrint
+from Utils.DebugPrint import DebugPrint
 
 class Robot(ABC):
-    def __init__(self, starting_position: Position = Position(0, 0), max_accelerations: Position = Position(100, 100),
+    def __init__(self, starting_position: Position = Position(0, 0), max_acceleration: float = 1000,
                  max_velocity: float = 100, sprite: Circle = Circle(0, 0, 10)):
         self.position = starting_position
         self.velocity = Position(0, 0)
         self.max_velocity = max_velocity
-        self.max_accelerations = max_accelerations
+        self.max_acceleration = max_acceleration
         self.sprite = sprite
+
+        # integral function = (direction * max_acceleration / 2) * (time_delta^2)
+        # for acceleration to stop = max_speed/max_acceleration
+        self.critical_duration = self.max_velocity / self.max_acceleration
+        self.critical_distance = ((self.max_acceleration / 2) *
+                                  (self.critical_duration ** 2))
+        # gives the slope of the function
+        self.acceleration_smoother = AccelerationSmoother(self.max_acceleration, max_value=self.max_velocity, min_value=-self.max_velocity)
+
+    def calculate_critical_distance(self) -> float:
+        """
+        Calculates the distance needed to go from the current speed to 0 acceleration
+        """
+        current_acceleration = self.acceleration_smoother.get_value()
+
+        # gets the duration till the derivative is at 0
+        critical_duration = current_acceleration / self.max_acceleration
+        critical_distance = (self.max_acceleration / 2) * abs(
+                critical_duration ** 2)  # integral calculation should stay the same
+        return critical_distance
 
     def go_to_position(self, target_position: Position, time_delta_seconds: float, debug=False) -> None:
         """
@@ -24,21 +46,42 @@ class Robot(ABC):
         :param time_delta_seconds: The time since the last update
         :param debug: Prints debug statements if true
         :return:"""
-        # force = target_position - (self.position + self.velocity)
-        # force.rotation = self.position.rotation
-        # self.apply_force(force, time_delta_seconds, limit_acceleration=True)
 
-        if target_position.get_distance_to(self.position) < 2:
+        # Listen to me, I don't understand how any of this works.
+        # I did this by trial and error, just let the black magic do its thing
+        target_magnitude = target_position.get_distance_to(self.position)
+        current_magnitude = self.velocity.get_distance_to(Position(0, 0))
+        direction = sign(target_magnitude - current_magnitude)
 
-         if target_position.get_distance_to(self.position) < 2: # deadzone to prevent jittering
+        state = 0
+        # if within tolerance just set current position to target
+        # NOTE: might cause it to have some jittery motion at low fps
+        if self.acceleration_smoother.get_value() == 0 and \
+                target_magnitude - current_magnitude <= time_delta_seconds * self.max_acceleration:
+            self.current_value = target_magnitude / time_delta_seconds
+            self.acceleration_smoother.set_state(0)
 
-            self.velocity = Position(0, 0)
-            return
+        # handles accelerating up: checks that it is not within the "critical distance" of the target
+        elif target_magnitude - current_magnitude > self.calculate_critical_distance():
+            current_magnitude = self.acceleration_smoother.update(self.max_acceleration * direction, time_delta_seconds)
+            state = 1
+
+        # handles deaccelerating when in critical distance
+        else:
+            current_magnitude = self.acceleration_smoother.update(0, time_delta_seconds) * time_delta_seconds
+            state = -1
 
         rotation_to = self.position.get_angle_to(target_position)
-        
-        self.velocity.x = cos(rotation_to * pi / 180) * self.max_velocity
-        self.velocity.y = sin(rotation_to * pi / 180) * self.max_velocity
+        current_magnitude = self.clamp(current_magnitude, self.max_velocity, 0)
+
+        self.velocity.x = cos(rotation_to * pi / 180) * current_magnitude
+        self.velocity.y = sin(rotation_to * pi / 180) * current_magnitude
+
+        DebugPrint.add_debug_function(lambda : print(f"{target_magnitude=}"))
+        DebugPrint.add_debug_function(lambda : print(f"{current_magnitude=}"))
+        DebugPrint.add_debug_function(lambda : print(f"{self.calculate_critical_distance()=}"))
+        DebugPrint.add_debug_function(lambda : print(f"{self.acceleration_smoother.get_value()=}"))
+        DebugPrint.add_debug_function(lambda : print(f"{state=}"))
 
         self.update(time_delta_seconds, debug=False)
 
@@ -71,8 +114,8 @@ class Robot(ABC):
         """
         self.position += self.velocity * time_delta_seconds
         if debug:
-            print(f"{self.position=}")
-            print(f"{self.velocity=}")
+            DebugPrint.add_debug_function(f"{self.position=}")
+            DebugPrint.add_debug_function(f"{self.velocity=}")
 
     def apply_force(self, force: Position, time_delta_seconds: float, limit_acceleration: bool = False,
                     apply_velocity: bool = True, debug: bool = False) -> None:
@@ -97,20 +140,13 @@ class Robot(ABC):
         if apply_velocity:
             self.update(time_delta_seconds, debug=False)
 
-        if debug:
-            print(
-                '=========================\n'
-            )
-            print(f"{self.velocity=}")
-            print(f"{self.position=}")
-            print(f"{force=}")
-
     def collided_with_mask(self, mask: pygame.mask.Mask) -> bool:
         """
         This function checks if the robot has collided with the field        :param field:  to check
         :return: If the robot has collided with the field
         """
-        return self.sprite.mask.overlap_area(mask, (-self.position.x + self.sprite.radius, -self.position.y + self.sprite.radius)) > 0
+        return self.sprite.mask.overlap_area(mask, (
+            -self.position.x + self.sprite.radius, -self.position.y + self.sprite.radius)) > 0
 
     @staticmethod
     def clamp(value, max_value, min_value):

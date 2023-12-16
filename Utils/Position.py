@@ -1,6 +1,6 @@
 import math
-from Rotation import Rotation
-from Translation import Translation
+from Utils.Rotation import Rotation
+from Utils.Translation import Translation
 
 
 class Position(Translation):
