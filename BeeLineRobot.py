@@ -12,9 +12,9 @@ class BeeLineRobot(Robot):
         super().__init__(max_velocity=max_velocity, max_acceleration=max_acceleration)
         self.force = Position(0, 0, 0)
 
-    def path_find(self, target_position: Position, debug=False) -> Position:
+    def path_find(self, target_position: Position, debug=False) -> [Position]:
         # just go straight to the target
-        return target_position
+        return [target_position]
 
     def display(self, screen, show_velocity=False) -> None:
         self.sprite.move_to(self.position.x, self.position.y)

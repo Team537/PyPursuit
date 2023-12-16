@@ -4,8 +4,10 @@ import pygame
 from math import atan2, pi
 from time import time
 import pickle
+from Utils.Position import Position
 
-from Utils.DebugPrint import DebugPrint
+from Utils.DebugPrint import DebugPrint=
+
 
 class SIGNavMesh:
     """
@@ -19,6 +21,14 @@ class SIGNavMesh:
         self.field_mask = field_mask
         self.inverse_mask = field_mask.copy()
         self.inverse_mask.invert()
+        self.triangulation = []
+
+    def traingulate(self) -> None:
+        """
+        This function triangulates the nav mesh
+        :return:
+        """
+
 
     def generate_nodes(self, threshold: float = 0) -> None:
         """

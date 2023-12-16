@@ -5,7 +5,8 @@ from Utils.Translation import Translation
 
 class Position(Translation):
     """A Translation with a rotation
-    x and y are the position of the center of the robot, rotation is the rotation of the robot in degrees"""
+    x and y are the position the robot's centers,
+    rotation is the rotation of the robot in degrees on a unit circle"""
 
     def __init__(self, x, y, rotation: float | Rotation = Rotation(0)):
         super().__init__(x, y)
@@ -15,6 +16,7 @@ class Position(Translation):
         return Rotation.distance_to(self.rotation, other.rotation)
 
     def get_angle_to(self, other):
+        """Gets the angle from this position to another position on a unit circle"""
         return Rotation((math.atan2(other.y - self.y, other.x - self.x) * 180 / math.pi + 360) % 360)
 
     def as_positive(self):

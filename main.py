@@ -33,10 +33,12 @@ if __name__ == "__main__":
     robot = BeeLineRobot(max_velocity=500, max_acceleration = 600)
     robot.position = Position(500, 500)
     mouse_x, mouse_y = pygame.mouse.get_pos()
+    mouse_just_pressed = (False, False, False)
 
     # track collisions
     collisions = 0
     colliding = False
+    robot_running = False
 
     # main loop
     running = True
@@ -49,20 +51,25 @@ if __name__ == "__main__":
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:  # reset collision count if r is pressed
                     collisions = 0
+                if event.key == pygame.K_c: # clear waypoints if c is pressed
+                    robot.trajectory = []
+                if event.key == pygame.K_s: # start robot if s is pressed
+                    robot_running = True
 
-        # update time
+        # update basics
         time_delta_seconds = time.time() - last_time
         last_time = time.time()
+        mouse_x, mouse_y = pygame.mouse.get_pos()
 
-        # pause the cursor if the right mouse button is pressed
-        if not pygame.mouse.get_pressed()[2]:
-            mouse_x, mouse_y = pygame.mouse.get_pos()
-            cursor.move_to(mouse_x, mouse_y)
+        # sets a new waypoint if the left mouse button is pressed
+        if pygame.mouse.get_pressed()[0] and not mouse_just_pressed[0]:
+            robot.add_waypoint(Position(mouse_x, mouse_y))
 
-        # pauses the robot if the left mouse button is pressed
-        if not pygame.mouse.get_pressed()[0]:
-            robot.go_to_position(robot.path_find(Position(mouse_x, mouse_y)), time_delta_seconds=time_delta_seconds,
-                                 debug=False)
+        # follow trajectory if there is one
+        if robot_running:
+            # reset robot if it reaches the end of the trajectory
+            if robot.follow_trajectory(time_delta_seconds, debug=True):
+                robot_running = False
 
         # set margin mask if the middle mouse button is pressed
         # NOTE: this operation is so slow that it may cause the physics to act weirdly, because the time_delta is so big
@@ -96,6 +103,13 @@ if __name__ == "__main__":
 
         # update robot display
         robot.display(screen)
+        for i, waypoint in enumerate(robot.trajectory):
+            if i == 0:
+                pygame.draw.circle(screen, (0, 255, 0), (waypoint.x, waypoint.y), 5)
+                pygame.draw.line(screen, (0, 255, 0), (robot.position.x, robot.position.y), (waypoint.x, waypoint.y), 5)
+            else:
+                pygame.draw.circle(screen, (0, 0, 255), (waypoint.x, waypoint.y), 5)
+                pygame.draw.line(screen, (0, 0, 255), (robot.trajectory[i - 1].x, robot.trajectory[i - 1].y), (waypoint.x, waypoint.y), 5)
 
         # ray cast to cursor
         if ray_cast(robot.position, Position(mouse_x, mouse_y), field.mask):
@@ -110,12 +124,8 @@ if __name__ == "__main__":
                     (10, 90))
         screen.blit(font.render("Current Speed: ", True, (255, 0, 0)),
                     (10, 130))
-        circle_color = (0, 255, 0)
-        if robot.state == -1:
-            circle_color = (255, 0, 0)
-        elif robot.state == 0:
-            circle_color = (255, 255, 0)
-
+        circle_color = (125, 125, 125)
+        # to show velocity
         pygame.draw.circle(screen, circle_color, (280, 145), 15)
 
         pygame.draw.line(screen, (0, 0, 255), (280, 145),
@@ -124,5 +134,7 @@ if __name__ == "__main__":
 
         # tick clock
         clock.tick(120)  # change this to change the framerate. -1 means unlimited
+        # update just pressed
+        mouse_just_pressed = pygame.mouse.get_pressed()
 
         DebugPrinter.update()
