@@ -30,7 +30,7 @@ if __name__ == "__main__":
     margin = 5
     field = Field(pygame.image.load("images/TestField.png"), margin=margin)
     cursor = Circle(5, 5, 3)
-    robot = BeeLineRobot(max_velocity=150, max_acceleration = 450)
+    robot = BeeLineRobot(max_velocity=500, max_acceleration = 600)
     robot.position = Position(500, 500)
     mouse_x, mouse_y = pygame.mouse.get_pos()
 
@@ -108,9 +108,21 @@ if __name__ == "__main__":
         cursor.draw(screen)
         screen.blit(font.render(f"Framerate: {round(1 / (time_delta_seconds + 0.00001), 2)}", True, (255, 0, 0)),
                     (10, 90))
+        screen.blit(font.render("Current Speed: ", True, (255, 0, 0)),
+                    (10, 130))
+        circle_color = (0, 255, 0)
+        if robot.state == -1:
+            circle_color = (255, 0, 0)
+        elif robot.state == 0:
+            circle_color = (255, 255, 0)
+
+        pygame.draw.circle(screen, circle_color, (280, 145), 15)
+
+        pygame.draw.line(screen, (0, 0, 255), (280, 145),
+                         (280 + robot.velocity.x, 145 + robot.velocity.y), 5)
         pygame.display.update()
 
         # tick clock
-        clock.tick(-1)  # change this to change the framerate. -1 means unlimited
+        clock.tick(120)  # change this to change the framerate. -1 means unlimited
 
         DebugPrinter.update()

@@ -21,10 +21,10 @@ class Robot(ABC):
         # integral function = (direction * max_acceleration / 2) * (time_delta^2)
         # for acceleration to stop = max_speed/max_acceleration
         self.critical_duration = self.max_velocity / self.max_acceleration
-        self.critical_distance = ((self.max_acceleration / 2) *
-                                  (self.critical_duration ** 2))
+        self.critical_distance = (self.max_acceleration / 2) * (self.critical_duration ** 2)
         # gives the slope of the function
         self.acceleration_smoother = AccelerationSmoother(self.max_acceleration, max_value=self.max_velocity, min_value=-self.max_velocity)
+        self.state = 0
 
     def calculate_critical_distance(self) -> float:
         """
@@ -49,41 +49,45 @@ class Robot(ABC):
 
         # Listen to me, I don't understand how any of this works.
         # I did this by trial and error, just let the black magic do its thing
-        target_magnitude = target_position.get_distance_to(self.position)
+        target_distance = target_position.get_distance_to(self.position)
         current_magnitude = self.velocity.get_distance_to(Position(0, 0))
-        direction = sign(target_magnitude - current_magnitude)
 
         state = 0
         # if within tolerance just set current position to target
         # NOTE: might cause it to have some jittery motion at low fps
         if self.acceleration_smoother.get_value() == 0 and \
-                target_magnitude - current_magnitude <= time_delta_seconds * self.max_acceleration:
-            self.current_value = target_magnitude / time_delta_seconds
+                target_distance < time_delta_seconds * self.max_acceleration:
+            self.position = target_position
             self.acceleration_smoother.set_state(0)
 
-        # handles accelerating up: checks that it is not within the "critical distance" of the target
-        elif target_magnitude - current_magnitude > self.calculate_critical_distance():
-            current_magnitude = self.acceleration_smoother.update(self.max_acceleration * direction, time_delta_seconds)
-            state = 1
-
-        # handles deaccelerating when in critical distance
-        else:
-            current_magnitude = self.acceleration_smoother.update(0, time_delta_seconds) * time_delta_seconds
+        # handles accelerating down: checks that it is within the "critical distance" of the target
+        elif target_distance <= self.calculate_critical_distance():
+            current_magnitude = self.acceleration_smoother.update(0, time_delta_seconds)
             state = -1
 
+        # handles accelerating when in critical distance
+        else:
+            current_magnitude = self.acceleration_smoother.update(self.max_acceleration, time_delta_seconds)
+            state = 1
+
         rotation_to = self.position.get_angle_to(target_position)
-        current_magnitude = self.clamp(current_magnitude, self.max_velocity, 0)
+        new_velocity = Position(
+            cos(rotation_to * pi / 180) * current_magnitude,
+            sin(rotation_to * pi / 180) * current_magnitude
+        )
 
-        self.velocity.x = cos(rotation_to * pi / 180) * current_magnitude
-        self.velocity.y = sin(rotation_to * pi / 180) * current_magnitude
+        change = new_velocity - self.velocity
+        self.apply_force(change, time_delta_seconds, debug=debug, limit_acceleration=True, apply_velocity=False)
 
-        DebugPrint.add_debug_function(lambda : print(f"{target_magnitude=}"))
+        DebugPrint.add_debug_function(lambda : print(f"{target_distance=}"))
         DebugPrint.add_debug_function(lambda : print(f"{current_magnitude=}"))
         DebugPrint.add_debug_function(lambda : print(f"{self.calculate_critical_distance()=}"))
         DebugPrint.add_debug_function(lambda : print(f"{self.acceleration_smoother.get_value()=}"))
         DebugPrint.add_debug_function(lambda : print(f"{state=}"))
+        DebugPrint.add_debug_function(lambda : print(f"{change=}"))
+        self.state = state
 
-        self.update(time_delta_seconds, debug=False)
+        self.update(time_delta_seconds, debug=debug)
 
     @abstractmethod
     def path_find(self, target_position: Position, debug=False) -> Position:
@@ -129,10 +133,10 @@ class Robot(ABC):
         """
         # limits acceleration
         if limit_acceleration:
-            force.scale_to(self.max_accelerations)
+            force.scale_to(self.max_acceleration, only_downscale=True)
 
         #   calculates velocity
-        self.velocity += force * time_delta_seconds
+        self.velocity += force
 
         #   limits velocity
         self.velocity.scale_to(self.max_velocity, only_downscale=True)
