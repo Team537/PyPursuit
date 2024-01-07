@@ -1,12 +1,21 @@
+import math
+
 from pygame.mask import Mask
 from Field import Field
 import pygame
 from math import atan2, pi
 from time import time
 import pickle
+from Utils.DebugPrint import DebugPrint
+
+from Utils.RayCast import ray_cast
 from Utils.Position import Position
 
-from Utils.DebugPrint import DebugPrint=
+
+class Edge:
+    def __init__(self, next_point: Position, weight: float = 1):
+        self.next_point = next_point
+        self.weight = weight
 
 
 class SIGNavMesh:
@@ -16,19 +25,43 @@ class SIGNavMesh:
     """
 
     def __init__(self, field_mask: Mask):
-        self.points = []
-        self.lines = []
+        self.polygon_point_outlines = []
         self.field_mask = field_mask
-        self.inverse_mask = field_mask.copy()
-        self.inverse_mask.invert()
-        self.triangulation = []
+        self.points = []
+        self.graph: dict[Position, list[Edge]] = dict()
 
-    def traingulate(self) -> None:
+
+    def mesh_baker(self) -> list[tuple[float, float, float]]:
         """
+        "Best Bakery in town"
         This function triangulates the nav mesh
         :return:
         """
+        all_points = []
+        for polygon_points in self.polygon_point_outlines:
+            all_points += polygon_points
 
+        print(f"Baking {len(all_points)} points")
+        print(f"Estimated time: {len(all_points) ** 2 / 8000} seconds")
+        start_time = time()
+        lines = 0
+        for node in all_points:
+            for other_node in all_points:
+                # print(f"Ray casting from {node} to {other_node}")
+                if node != other_node:
+                    if not ray_cast(Position(node[0], node[1]), Position(other_node[0], other_node[1]), self.field_mask):
+                        lines += 1
+                        self.graph[Position(node[0], node[1])].append(
+                            Edge(
+                                Position(other_node[0], other_node[1]),
+                                weight=Position(node[0], node[1]).get_distance_to(Position(other_node[0], other_node[1]))
+                            )
+                        )
+
+        print(f"Time taken: {time() - start_time}")
+        print(f"Lines: {lines}")
+
+        return None
 
     def generate_nodes(self, threshold: float = 0) -> None:
         """
@@ -45,12 +78,12 @@ class SIGNavMesh:
             outline = component.outline()
             total_outline += len(outline)
             results = self.linearize(outline, threshold)
-            self.points += results
+            for point in results:
+                self.graph[Position(point[0], point[1])] = []
+            self.polygon_point_outlines.append(results)
 
-        DebugPrint.add_debug_function(f"There are {len(components)} components")
-        DebugPrint.add_debug_function(f"There are {len(self.points)} collinear points with a threshold of {threshold}")
+        DebugPrint.add_debug_function(f"There are {len(self.polygon_point_outlines)} polygons with a threshold of {threshold}")
         DebugPrint.add_debug_function(f"There are {total_outline} total points")
-        DebugPrint.add_debug_function(f"Removed {total_outline - len(self.points)} collinear points")
         DebugPrint.add_debug_function(f"Time taken: {time() - start_time}")
 
     def linearize(self, points: list | tuple, threshold) -> list[int, int]:
@@ -123,62 +156,81 @@ class SIGNavMesh:
         :param threshold_degrees: The threshold for the collinear function (0 is exact, 180 is always true)
         :return: If the three points are collinear
         """
-        # #  calculates the area of a triangle formed by the three points
-        # area_of_triangle = abs((point1[0] * (point2[1] - point3[1]) + point2[0] * (point3[1] - point1[1]) +
-        #                         point3[0] * (point1[1] - point2[1])) / 2.0)
-        # a point is collinear if the area of the triangle formed by the three points is 0, however the threshold
-        # allows for some error
         if threshold_degrees == 180:
             return True
         angle1 = atan2(point1[1] - point2[1], point1[0] - point2[0])
         angle2 = atan2(point2[1] - point3[1], point2[0] - point3[0])
         return (abs(angle1 - angle2) * 180 / pi) % 180 <= threshold_degrees % 180
 
-    def save(self, filename: str) -> None:
+    def save_graph(self, filename: str) -> None:
         """
         This function saves the nav mesh to a file
         :param filename: The name of the file to save to
         :return:
         """
         with open(filename, "wb") as fout:
-            pickle.dump(self.points, fout)
+            pickle.dump((self.points, self.graph), fout)
 
-    def load(self, filename: str) -> None:
+    def load_graph(self, filename: str) -> None:
         """
         This function loads the nav mesh from a file
         :param filename: The name of the file to load from
         :return:
         """
         with open(filename, "rb") as fin:
-            self.points = pickle.load(fin)
+            self.points, self.graph = pickle.load(fin)
 
 
 if __name__ == "__main__":
     pygame.init()
-    screen = pygame.display.set_mode((1000, 1000))
+    # so that pygame doesn't error out
+    screen = pygame.display.set_mode((1, 1))
+
+    load_from_file = False
+    test_mesh = SIGNavMesh(
+        Field(
+            pygame.image.load("images/Please don't crash my pc this time.png"), margin=4, margin_shape="square"
+        ).margin_mask
+    )
+
+    if load_from_file:
+        # placeholder
+        try:
+            print("Loading nav mesh")
+            test_mesh.load_graph("nav_meshes/TestNavMesh.pickle")
+            print("Loaded nav mesh")
+        except FileNotFoundError:
+            print("======Warning=======\nNav mesh not found, generating new one\n====================")
+            load_from_file = False
+
+    if not load_from_file:
+        test_mesh.generate_nodes()
+        print("Started Baking")
+        test_mesh.mesh_baker()
+        print("Finished Baking")
+        test_mesh.save_graph("nav_meshes/TestNavMesh.pickle")
+
+    screen = pygame.display.set_mode(test_mesh.field_mask.get_size())
     pygame.display.set_caption(f"Nav Mesh Test")
 
-    test_mesh = SIGNavMesh(
-        Field(pygame.image.load("images/TestField.png"), margin=4, margin_shape="square").margin_mask)
-
-    reset = True
-
-    if not reset:
-        try:
-            pass
-            # test_mesh.load("nav_meshes/TestNavMesh.pickle")
-        except FileNotFoundError:
-            test_mesh.generate_nodes()
-            test_mesh.save("nav_meshes/TestNavMesh.pickle")
-    else:
-        test_mesh.generate_nodes()
-        test_mesh.save("nav_meshes/TestNavMesh.pickle")
-
-    image = pygame.Surface((1000, 1000))
+    image = pygame.Surface(test_mesh.field_mask.get_size())
     image.blit(test_mesh.field_mask.to_surface(), (0, 0))
 
-    for point in test_mesh.points:
-        image.set_at(point, (255, 0, 0))
+
+    for polygon_points in test_mesh.polygon_point_outlines:
+        for point in polygon_points:
+            image.set_at(point, (255, 0, 0))
+
+    color_change = (max(screen.get_size()) / 6)  # the constant means what ratio it takes to change to red
+    for point in test_mesh.graph:
+        for edge in test_mesh.graph[point]:
+            pygame.draw.line(image,
+                 (
+                    255 - math.floor(255 / math.ceil(edge.weight / color_change)),
+                    255 / math.floor(math.ceil(edge.weight / color_change)), 0
+                 ),
+                 point.as_tuple()[:2], edge.next_point.as_tuple()[:2]
+             )
 
     pygame.image.save(image, "images/NavMesh.png")
 

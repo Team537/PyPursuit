@@ -102,20 +102,26 @@ if __name__ == "__main__":
         field.draw(screen, show_margin_mask=True)
 
         # update robot display
-        robot.display(screen)
-        for i, waypoint in enumerate(robot.trajectory):
-            if i == 0:
+        for waypoint_i, waypoint in enumerate(robot.trajectory):
+            if waypoint_i == 0:
                 pygame.draw.circle(screen, (0, 255, 0), (waypoint.x, waypoint.y), 5)
                 pygame.draw.line(screen, (0, 255, 0), (robot.position.x, robot.position.y), (waypoint.x, waypoint.y), 5)
             else:
                 pygame.draw.circle(screen, (0, 0, 255), (waypoint.x, waypoint.y), 5)
-                pygame.draw.line(screen, (0, 0, 255), (robot.trajectory[i - 1].x, robot.trajectory[i - 1].y), (waypoint.x, waypoint.y), 5)
+                pygame.draw.line(screen, (0, 0, 255), (robot.trajectory[waypoint_i-1].x, robot.trajectory[waypoint_i-1].y), (waypoint.x, waypoint.y), 5)
 
+        robot.display(screen)
         # ray cast to cursor
-        if ray_cast(robot.position, Position(mouse_x, mouse_y), field.mask):
-            pygame.draw.line(screen, (255, 0, 0), (robot.position.x, robot.position.y), (mouse_x, mouse_y), 5)
+        if len(robot.trajectory):
+            if ray_cast(robot.trajectory[-1], Position(mouse_x, mouse_y), field.mask):
+                pygame.draw.line(screen, (255, 0, 0), (robot.trajectory[-1].x, robot.trajectory[-1].y), (mouse_x, mouse_y), 5)
+            else:
+                pygame.draw.line(screen, (0, 255, 0), (robot.trajectory[-1].x, robot.trajectory[-1].y), (mouse_x, mouse_y), 5)
         else:
-            pygame.draw.line(screen, (0, 255, 0), (robot.position.x, robot.position.y), (mouse_x, mouse_y), 5)
+            if ray_cast(robot.position, Position(mouse_x, mouse_y), field.mask):
+                pygame.draw.line(screen, (255, 0, 0), (robot.position.x, robot.position.y), (mouse_x, mouse_y), 5)
+            else:
+                pygame.draw.line(screen, (0, 255, 0), (robot.position.x, robot.position.y), (mouse_x, mouse_y), 5)
 
         # draw everything
         screen.blit(font.render(f"Collisions: {collisions}", True, (255, 0, 0)), (10, 50))
@@ -133,7 +139,7 @@ if __name__ == "__main__":
         pygame.display.update()
 
         # tick clock
-        clock.tick(120)  # change this to change the framerate. -1 means unlimited
+        clock.tick(30)  # change this to change the framerate. -1 means unlimited
         # update just pressed
         mouse_just_pressed = pygame.mouse.get_pressed()
 

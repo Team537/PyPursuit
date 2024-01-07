@@ -17,3 +17,5 @@ __pycache__/AccelerationSmoother.cpython-310.pyc
 *.pyc
 *.pyc
 *.pyc
+__pycache__/Robot.cpython-310.pyc
+*.pyc

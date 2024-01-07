@@ -3,12 +3,13 @@ from Utils.Position import Position
 from math import ceil
 
 
-def ray_cast(start: Position, end: Position, mask: Mask, return_point: bool = False) -> bool | Position:
+def ray_cast(start: Position, end: Position, mask: Mask, return_point: bool = False, tolerance: float = 1.4) -> bool | Position:
     """
-    This function casts a ray from the start position to the end position and returns if it hit the mask
+    This function casts a ray from the start position to the end position and returns true if it hit the mask
     :param start: The start position
     :param end: The end position
     :param mask: The mask to check
+    :param return_point: If the function should return the point of collision
     :return: If the ray hit the mask
     """
 
@@ -39,7 +40,10 @@ def ray_cast(start: Position, end: Position, mask: Mask, return_point: bool = Fa
             return False
 
         #   checks if the current position is colliding with the mask
-        if mask.get_at((int(current_position.x), int(current_position.y))):
+        pos = (round(current_position.x), round(current_position.y))
+        if mask.get_at(pos):
+            if current_position.get_distance_to(end) < tolerance:
+                return False
             #   returns true if it is
             if return_point:
                 return current_position

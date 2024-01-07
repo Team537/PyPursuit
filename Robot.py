@@ -1,3 +1,4 @@
+import random
 from abc import ABC, abstractmethod
 
 import pygame.mask
@@ -7,6 +8,8 @@ from Utils.AccelerationSmoother import AccelerationSmoother
 from Field import Circle
 from math import cos, sin, pi
 from Utils.DebugPrint import DebugPrint
+from Utils.UtilFuncs import sign
+
 
 class Robot(ABC):
     def __init__(self, starting_position: Position = Position(0, 0), max_acceleration: float = 1000,
@@ -16,14 +19,15 @@ class Robot(ABC):
         self.max_velocity = max_velocity
         self.max_acceleration = max_acceleration
         self.sprite = sprite
-        self.trajectory = []
+        self.trajectory: list[Position] = []
 
         # integral function = (direction * max_acceleration / 2) * (time_delta^2)
         # for acceleration to stop = max_speed/max_acceleration
         self.critical_duration = self.max_velocity / self.max_acceleration
         self.critical_distance = (self.max_acceleration / 2) * (self.critical_duration ** 2)
         # gives the slope of the function
-        self.acceleration_smoother = AccelerationSmoother(self.max_acceleration, max_value=self.max_velocity, min_value=0)
+        self.acceleration_smoother = AccelerationSmoother(self.max_acceleration, max_value=self.max_velocity,
+                                                          min_value=0)
 
     def calculate_critical_distance(self) -> float:
         """
@@ -34,7 +38,7 @@ class Robot(ABC):
         # gets the duration till the derivative is at 0
         critical_duration = current_acceleration / self.max_acceleration
         critical_distance = (self.max_acceleration / 2) * abs(
-                critical_duration ** 2)  # integral calculation should stay the same
+            critical_duration ** 2)  # integral calculation should stay the same
         return critical_distance
 
     def set_trajectory(self, trajectory: list[Position]) -> None:
@@ -56,6 +60,7 @@ class Robot(ABC):
     def follow_trajectory(self, time_delta_seconds: float, trajectory: list[Position] = None, debug=False) -> bool:
         """
         This function makes the robot follow the trajectory
+        Edit this function to change how the robot follows the trajectory
         :param time_delta_seconds: The time since the last update
         :param trajectory: The trajectory to follow (if None, uses the current trajectory)
         :param debug: Prints debug statements if true
@@ -66,12 +71,14 @@ class Robot(ABC):
 
         if len(self.trajectory) > 0:
             if self.go_to_position(self.trajectory[0], time_delta_seconds, debug=debug, update_position=True):
+                self.velocity = Position(0, 0)
                 self.trajectory.pop(0)  # pops in global scope too
 
         if len(self.trajectory) == 0:
             return True
 
-    def go_to_position(self, target_position: Position, time_delta_seconds: float, update_position = False, debug=False) -> bool:
+    def go_to_position(self, target_position: Position, time_delta_seconds: float, update_position=False,
+                       debug=False) -> bool:
         """
         This function makes the robot go to the target position
         Should be overriden depending on what type of robot it is & how you want it to accelerate and deaccelearte
@@ -89,11 +96,11 @@ class Robot(ABC):
 
         # if within tolerance just set current position to target
         # NOTE: might cause it to have some jittery motion at low fps
-        if self.acceleration_smoother.get_value() == 0 and \
-                target_distance < time_delta_seconds * self.max_acceleration:
-            self.position = target_position
+        if current_magnitude <= self.max_acceleration * time_delta_seconds and \
+                target_distance < time_delta_seconds * (self.max_acceleration - self.acceleration_smoother.get_value()):
             self.acceleration_smoother.set_state(0)
             self.velocity = Position(0, 0)
+            current_magnitude = self.velocity.get_distance_to(Position(0, 0)) / time_delta_seconds
             at_target = True
 
         # handles accelerating down: checks that it is within the "critical distance" of the target
@@ -109,12 +116,20 @@ class Robot(ABC):
             cos(rotation_to * pi / 180) * current_magnitude,
             sin(rotation_to * pi / 180) * current_magnitude
         )
-
-        DebugPrint.add_debug_function(f"{new_velocity / (current_magnitude + 10e-10)=}")
-        DebugPrint.add_debug_function(f"{rotation_to=}")
-
         change = new_velocity - self.velocity
-        self.apply_force(change, time_delta_seconds, debug=debug, limit_acceleration=True, apply_velocity=update_position)
+
+        # just for testing
+        # simulate sliding, so robot decelerates slower
+        # error_func = lambda pos: pos * Position(
+        #     (1 if (sign(change.x) == sign(self.velocity.x)) else 0.5),
+        #     (1 if (sign(change.y) == sign(self.velocity.y)) else 0.5),
+        #     1
+        # )
+
+        # DebugPrint.add_debug_function(f"{error_func(change)=}, {change=}, {self.velocity=}")
+        self.apply_force(change, time_delta_seconds, limit_acceleration=True, apply_velocity=update_position) #,
+                         # error_function=error_func)
+
         return at_target
 
     @abstractmethod
@@ -150,15 +165,17 @@ class Robot(ABC):
             DebugPrint.add_debug_function(f"{self.velocity=}")
 
     def apply_force(self, force: Position, time_delta_seconds: float, limit_acceleration: bool = False,
-                    apply_velocity: bool = True, debug: bool = False) -> None:
+                    apply_velocity: bool = True, error_function=lambda pos: pos * 1) -> None:
         """ This function applies a force to the robot
-        :param debug:
+        :param error_function: Function to add error to the force
         :param force: The force to apply to the robot
         :param time_delta_seconds: The time since the last update
         :param limit_acceleration: If the acceleration should be limited to the robot's max
         :param apply_velocity: If the new velocity should be applied to the robot's position
         :return:
         """
+        # adds error to the force
+        force = error_function(force)
         # limits acceleration
         if limit_acceleration:
             force.scale_to(self.max_acceleration, only_downscale=True)

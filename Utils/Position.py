@@ -25,6 +25,9 @@ class Position(Translation):
     def as_list(self):
         return [self.x, self.y, self.rotation]
 
+    def as_tuple(self):
+        return (self.x, self.y, self.rotation)
+
     def scale_to(self, scale: "Position | float | int", only_downscale=False):
         if isinstance(scale, Position):
             other = scale.as_positive()
