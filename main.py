@@ -76,7 +76,7 @@ if __name__ == "__main__":
         # set margin mask if the middle mouse button is pressed
         # NOTE: this operation is so slow that it may cause the physics to act weirdly, because the time_delta is so big
         if pygame.mouse.get_pressed()[1] and field.margin == margin:
-            field.set_margin_mask(abs(margin - 15))  # quirky way to toggle between 0 and 15
+            field.set_margin_mask(abs(margin - 25))  # quirky way to toggle between 0 and 15
         elif not pygame.mouse.get_pressed()[1] and field.margin != margin:  # super hacky way to run once per click
             margin = field.margin
 
@@ -91,6 +91,11 @@ if __name__ == "__main__":
             if not colliding:  # updates collision
                 collisions += 1
                 colliding = True  # this makes sure we don't call it multiple times in the same collision
+                screen.blit(font.render(f"Collisions: {collisions}", True, (255, 0, 0)), (10, 50))
+                screen.blit(font.render(f"COLLIDED", True, (255, 0, 0)), (screen.get_width()/2, screen.get_height()/2))
+                pygame.display.flip()
+                time.sleep(0.5)
+            
             robot.sprite.set_color((255, 0, 0, 255))
         elif robot.collided_with_mask(field.margin_mask):  # check if robot is in the margin
             robot.sprite.set_color((255, 125, 0, 255))

@@ -45,7 +45,7 @@ class BasicPathfindBot(Robot):
         if not trajectory:
             self.velocity = Position(0, 0)
             return True
-        
+
         # pathfinds to the next point
         if not self.path_to_next_point:
             # handles an invalid target
@@ -69,7 +69,7 @@ class BasicPathfindBot(Robot):
                 self.velocity = Position(0, 0)
                 return False
 
-            _stall[0] = 2
+            _stall[0] = 4
             self.velocity = Position(0, 0)
             self.path_to_next_point.append(trajectory[0])  # accounts for error b/c of resolution
 
