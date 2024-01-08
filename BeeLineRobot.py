@@ -1,6 +1,7 @@
 from Robot import Robot
 from Utils.Position import Position
 import pygame
+import Field
 
 
 class BeeLineRobot(Robot):
@@ -8,8 +9,8 @@ class BeeLineRobot(Robot):
     This robot goes to the target position in a straight line
     """
 
-    def __init__(self, max_velocity: float = 500, max_acceleration: float = 1000):
-        super().__init__(max_velocity=max_velocity, max_acceleration=max_acceleration)
+    def __init__(self, field: Field, max_velocity: float = 500, max_acceleration: float = 1000):
+        super().__init__(field, max_velocity=max_velocity, max_acceleration=max_acceleration)
         self.force = Position(0, 0, 0)
 
     def path_find(self, target_position: Position, debug=False) -> [Position]:

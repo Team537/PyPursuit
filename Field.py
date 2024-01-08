@@ -8,7 +8,7 @@ class Field(sprite.Sprite):
         self.width = image.get_width()
         self.height = image.get_height()
 
-        self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        self.image: pygame.surface.Surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
         self.image.fill((255, 255, 255, 0))
         self.image.blit(image, (0, 0))
 
@@ -23,11 +23,11 @@ class Field(sprite.Sprite):
         # sets stuff up for collision detection
         self.rect = self.image.get_rect()
         self.rect.center = (self.width / 2, self.height / 2)
-        self.mask = pygame.mask.from_surface(self.image)
+        self.mask: pygame.mask.Mask = pygame.mask.from_surface(self.image)
 
         # margins
-        self.margin_mask = None
-        self.margin = margin
+        self.margin_mask: pygame.mask.Mask = self.mask
+        self.margin: int = margin
         self._margin_mask_surface_cache = None  # this is a performance optimization. (cache, has_changed)
         self.set_margin_mask(margin, margin_shape)
 

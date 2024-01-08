@@ -2,6 +2,7 @@ import time
 
 import pygame
 from BeeLineRobot import BeeLineRobot
+from BasicPathfindBot import BasicPathfindBot
 from Field import Field, Circle
 from Utils.Position import Position
 from Utils.RayCast import ray_cast
@@ -18,7 +19,8 @@ if __name__ == "__main__":
     DebugPrinter = DebugPrint(1)
     # set up pygame
     pygame.init()
-    screen = pygame.display.set_mode((1000, 1000))  # (field.width, field.height))
+    map_scale = 2
+    screen = pygame.display.set_mode((802 * map_scale, 366 * map_scale))  # (field.width, field.height))
     pygame.display.set_caption(f"Collision Test with Field")
     font = pygame.font.Font('freesansbold.ttf', 32)
 
@@ -27,11 +29,11 @@ if __name__ == "__main__":
     last_time = time.time()
 
     # set up field, cursor, and robot
-    margin = 5
-    field = Field(pygame.image.load("images/TestField.png"), margin=margin)
+    margin = 25
+    field = Field(pygame.transform.scale(pygame.image.load("images/Map.png"), (802 * map_scale, 366 * map_scale)), margin=margin)
     cursor = Circle(5, 5, 3)
-    robot = BeeLineRobot(max_velocity=500, max_acceleration = 600)
-    robot.position = Position(500, 500)
+    robot = BasicPathfindBot(field, max_velocity=400, max_acceleration=600)
+    robot.position = Position(screen.get_width()/2, screen.get_height()/2)
     mouse_x, mouse_y = pygame.mouse.get_pos()
     mouse_just_pressed = (False, False, False)
 
@@ -68,7 +70,7 @@ if __name__ == "__main__":
         # follow trajectory if there is one
         if robot_running:
             # reset robot if it reaches the end of the trajectory
-            if robot.follow_trajectory(time_delta_seconds, debug=True):
+            if robot.follow_trajectory(time_delta_seconds):
                 robot_running = False
 
         # set margin mask if the middle mouse button is pressed
@@ -139,7 +141,7 @@ if __name__ == "__main__":
         pygame.display.update()
 
         # tick clock
-        clock.tick(30)  # change this to change the framerate. -1 means unlimited
+        clock.tick(50)  # change this to change the framerate. -1 means unlimited
         # update just pressed
         mouse_just_pressed = pygame.mouse.get_pressed()
 

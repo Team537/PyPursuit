@@ -5,6 +5,7 @@ import pygame.mask
 
 from Utils.Position import Position
 from Utils.AccelerationSmoother import AccelerationSmoother
+import Field
 from Field import Circle
 from math import cos, sin, pi
 from Utils.DebugPrint import DebugPrint
@@ -12,7 +13,7 @@ from Utils.UtilFuncs import sign
 
 
 class Robot(ABC):
-    def __init__(self, starting_position: Position = Position(0, 0), max_acceleration: float = 1000,
+    def __init__(self, field: Field, starting_position: Position = Position(0, 0), max_acceleration: float = 1000,
                  max_velocity: float = 100, sprite: Circle = Circle(0, 0, 10)):
         self.position = starting_position
         self.velocity = Position(0, 0)
@@ -20,6 +21,7 @@ class Robot(ABC):
         self.max_acceleration = max_acceleration
         self.sprite = sprite
         self.trajectory: list[Position] = []
+        self.field = field
 
         # integral function = (direction * max_acceleration / 2) * (time_delta^2)
         # for acceleration to stop = max_speed/max_acceleration
@@ -57,34 +59,38 @@ class Robot(ABC):
         """
         self.trajectory.append(waypoint)
 
-    def follow_trajectory(self, time_delta_seconds: float, trajectory: list[Position] = None, debug=False) -> bool:
+    def follow_trajectory(self, time_delta_seconds: float, trajectory: list[Position] = None) -> bool:
         """
         This function makes the robot follow the trajectory
         Edit this function to change how the robot follows the trajectory
         :param time_delta_seconds: The time since the last update
         :param trajectory: The trajectory to follow (if None, uses the current trajectory)
-        :param debug: Prints debug statements if true
         :return: If the robot is at the last position in the trajectory
         """
         if trajectory is not None:
             self.set_trajectory(trajectory)
 
         if len(self.trajectory) > 0:
-            if self.go_to_position(self.trajectory[0], time_delta_seconds, debug=debug, update_position=True):
-                self.velocity = Position(0, 0)
+            # on the last waypoint, it will slow down
+            if len(self.trajectory) == 1:
+                if self.go_to_position(self.trajectory[0], time_delta_seconds, update_position=True, slowdown=True):
+                    self.trajectory.pop(0)  # pops in global scope too
+
+            elif self.go_to_position(self.trajectory[0], time_delta_seconds, update_position=True, slowdown=False):
                 self.trajectory.pop(0)  # pops in global scope too
 
-        if len(self.trajectory) == 0:
+        else:
             return True
 
     def go_to_position(self, target_position: Position, time_delta_seconds: float, update_position=False,
-                       debug=False) -> bool:
+                       slowdown=True) -> bool:
         """
         This function makes the robot go to the target position
         Should be overriden depending on what type of robot it is & how you want it to accelerate and deaccelearte
         :param target_position: The position to go to
         :param time_delta_seconds: The time since the last update
-        :param debug: Prints debug statements if true
+        :param update_position: If the robot's position should be updated
+        :param slowdown: If the robot should slow down when it gets close to the target
         :return: if the robot is at the target"""
 
         at_target = False
@@ -96,16 +102,16 @@ class Robot(ABC):
 
         # if within tolerance just set current position to target
         # NOTE: might cause it to have some jittery motion at low fps
-        if current_magnitude <= self.max_acceleration * time_delta_seconds and \
-                target_distance < time_delta_seconds * (self.max_acceleration - self.acceleration_smoother.get_value()):
+        if target_distance < time_delta_seconds * (self.max_acceleration - self.acceleration_smoother.get_value()):
             self.acceleration_smoother.set_state(0)
-            self.velocity = Position(0, 0)
+            if slowdown: self.velocity = Position(0, 0)
             current_magnitude = self.velocity.get_distance_to(Position(0, 0)) / time_delta_seconds
             at_target = True
 
         # handles accelerating down: checks that it is within the "critical distance" of the target
         elif target_distance <= self.calculate_critical_distance():
-            current_magnitude = self.acceleration_smoother.update(0, time_delta_seconds)
+            if slowdown:
+                current_magnitude = self.acceleration_smoother.update(0, time_delta_seconds)
 
         # handles accelerating when in critical distance
         else:
@@ -127,9 +133,7 @@ class Robot(ABC):
         # )
 
         # DebugPrint.add_debug_function(f"{error_func(change)=}, {change=}, {self.velocity=}")
-        self.apply_force(change, time_delta_seconds, limit_acceleration=True, apply_velocity=update_position) #,
-                         # error_function=error_func)
-
+        self.apply_force(change, time_delta_seconds, limit_acceleration=True, apply_velocity=update_position)
         return at_target
 
     @abstractmethod
